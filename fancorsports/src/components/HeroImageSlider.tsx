@@ -24,6 +24,7 @@ interface HeroImageSliderProps {
   onSelectTeam: (league: string, team: string) => void;
   onShopAll: () => void;
   onOpenDiscount: () => void;
+  onOpenVoiceArena: () => void;
   currentIndex?: number;
   onIndexChange?: (index: number) => void;
 }
@@ -138,6 +139,7 @@ export function HeroImageSlider({
   onSelectTeam,
   onShopAll,
   onOpenDiscount,
+  onOpenVoiceArena,
   currentIndex: currentIndexProp,
   onIndexChange,
 }: HeroImageSliderProps) {
@@ -455,6 +457,18 @@ export function HeroImageSlider({
           >
             <Sparkles className="w-3.5 h-3.5 text-yellow-300" />
             GET 20% OFF REMINDER
+          </button>
+
+          {/* Coach Cor Live Voice Arena Trigger Button */}
+          <button
+            onClick={onOpenVoiceArena}
+            className="bg-gradient-to-r from-blue-500 via-[#00D2FF] to-indigo-600 hover:from-blue-400 hover:to-indigo-500 text-white px-5 py-2.5 rounded-full font-black text-xs tracking-wider uppercase shadow-lg shadow-[#00D2FF]/20 active:scale-95 transition-all cursor-pointer shrink-0 border border-[#00D2FF]/30 flex items-center gap-1.5"
+          >
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+            </span>
+            <span>COACH COR LIVE VOICE 🎙️</span>
           </button>
 
           {["NFL", "NBA", "WNBA", "MLB", "NHL", "MLS"].map((league) => (

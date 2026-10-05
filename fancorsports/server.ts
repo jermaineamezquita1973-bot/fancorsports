@@ -5,6 +5,7 @@ import { createServer as createViteServer } from "vite";
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
 import Stripe from "stripe";
+import { WebSocketServer, WebSocket } from "ws";
 
 const MOCK_TEAMS: { league: string; team: string }[] = [
   // NFL (33 teams)
@@ -693,10 +694,83 @@ Keep responses concise and friendly. If you don't know an answer, suggest they c
   }
 
   if (!process.env.VERCEL) {
-    app.listen(PORT, "0.0.0.0", () => {
+    const httpServer = app.listen(PORT, "0.0.0.0", () => {
       console.log(`Server running on http://localhost:${PORT}`);
     });
+    setupWebSocket(httpServer);
   }
+}
+
+function setupWebSocket(httpServer: any) {
+  const wss = new WebSocketServer({ server: httpServer, path: "/live" });
+
+  wss.on("connection", async (clientWs: WebSocket) => {
+    console.log("Client connected to Gemini Live session");
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      clientWs.send(JSON.stringify({ error: "Gemini API key is not configured on the server." }));
+      clientWs.close();
+      return;
+    }
+
+    try {
+      const ai = new GoogleGenAI({
+        apiKey: apiKey,
+        httpOptions: {
+          headers: {
+            "User-Agent": "aistudio-build",
+          },
+        },
+      });
+
+      const session = await ai.live.connect({
+        model: "gemini-3.8-live",
+        config: {
+          responseModalities: ["AUDIO" as any],
+          speechConfig: {
+            voiceConfig: { prebuiltVoiceConfig: { voiceName: "Puck" as any } },
+          },
+          systemInstruction: "You are Coach Cor, the ultimate fan assistant for FanCor Iconz. You speak enthusiastically and helpfully about sports gear, hoodies ($60), t-shirts ($30), jerseys, and the active leagues (NFL, NBA, WNBA, MLB, NHL, MLS). Keep your voice responses highly energetic, helpful, and concise.",
+        },
+        callbacks: {
+          onmessage: (message: any) => {
+            const audio = message.serverContent?.modelTurn?.parts?.[0]?.inlineData?.data;
+            if (audio) {
+              clientWs.send(JSON.stringify({ audio }));
+            }
+            if (message.serverContent?.interrupted) {
+              clientWs.send(JSON.stringify({ interrupted: true }));
+            }
+          },
+        },
+      });
+
+      clientWs.on("message", (data: any) => {
+        try {
+          const parsed = JSON.parse(data.toString());
+          if (parsed.audio) {
+            session.sendRealtimeInput({
+              audio: { data: parsed.audio, mimeType: "audio/pcm;rate=16000" },
+            });
+          }
+        } catch (err) {
+          console.error("Failed to parse websocket message:", err);
+        }
+      });
+
+      clientWs.on("close", () => {
+        console.log("Client disconnected from Gemini Live session");
+        try {
+          session.close();
+        } catch (e) {}
+      });
+
+    } catch (err: any) {
+      console.error("Failed to initialize Gemini Live session:", err);
+      clientWs.send(JSON.stringify({ error: `Failed to connect to Live API: ${err.message}` }));
+      clientWs.close();
+    }
+  });
 }
 
 startServer();

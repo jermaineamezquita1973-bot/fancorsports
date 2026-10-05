@@ -137,6 +137,10 @@ export function FanStand({ onShowToast, onOpenChat, onScrollToCatalog, onAboutOp
   const [isVideoPlaying, setIsVideoPlaying] = useState<boolean>(false);
   const [isMuted, setIsMuted] = useState<boolean>(true);
 
+  // Coach Cor Live Commentary Radio Show State
+  const [isRadioOn, setIsRadioOn] = useState<boolean>(false);
+  const [radioText, setRadioText] = useState<string>("Tune in to receive real-time commentary and sports highlights narrated live by Coach Cor!");
+
   // Fan Showcase State
   const [showcasePosts, setShowcasePosts] = useState<FanPost[]>([]);
   const [newPostModal, setNewPostModal] = useState<boolean>(false);
@@ -636,6 +640,98 @@ export function FanStand({ onShowToast, onOpenChat, onScrollToCatalog, onAboutOp
     return ratings[team] ? "1 review" : "No ratings yet";
   };
 
+  const generateCommentary = (g: Game) => {
+    const intros = [
+      `BOOM! Welcome back to FanCor Sports Commentary, hosted live by Coach Cor!`,
+      `Oh baby! We are checking in live on the massive matchup between the ${g.teamAway} and the ${g.teamHome}!`,
+      `Fancor Sports network radio brings you the hottest updates in real-time!`
+    ];
+    
+    const details = g.status === "LIVE" ? [
+      `The game is absolutely on fire right now! The score is ${g.scoreAway} to ${g.scoreHome} with the ${g.scoreAway > g.scoreHome ? g.teamAway : g.teamHome} leading! What an unbelievable show of sportsmanship!`,
+      `It is neck and neck! Current score stands at ${g.scoreAway} for the visitors and ${g.scoreHome} for the host team! The crowd is going absolutely bananas!`,
+      `Unbelievable defense! But here they go, moving down the field, making plays! The board shows ${g.scoreAway} to ${g.scoreHome}!`
+    ] : g.status === "FINISHED" ? [
+      `And that is a wrap! The game has finished with a spectacular score of ${g.scoreAway} to ${g.scoreHome}! What a legendary game!`,
+      `The final whistle has blown! The ${g.scoreAway > g.scoreHome ? g.teamAway : g.teamHome} take home the crown with a final score of ${g.scoreAway} to ${g.scoreHome}!`
+    ] : [
+      `This game is scheduled for kickoff soon! The anticipation is building, and fans are already locking in their predictions on the Fan Stand!`,
+      `Ready for action! The ${g.teamAway} face the ${g.teamHome} in this upcoming clash! Make sure to grab your official team hoodies at FanCor Iconz to rep your squad!`
+    ];
+
+    const outros = [
+      `Remember, qualifying apparel orders of seventy-five dollars or more get free standard shipping! Stay tuned for more live action!`,
+      `This is Coach Cor signing off, rep your gear, keep your fandom active, and let's go team!`
+    ];
+
+    const intro = intros[Math.floor(Math.random() * intros.length)];
+    const detail = details[Math.floor(Math.random() * details.length)];
+    const outro = outros[Math.floor(Math.random() * outros.length)];
+
+    return `${intro} ${detail} ${outro}`;
+  };
+
+  const handleToggleRadio = () => {
+    if (isRadioOn) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      setIsRadioOn(false);
+      setRadioText("Radio commentary tuned off. Click Listen Live to tune back in!");
+    } else {
+      setIsRadioOn(true);
+      const text = generateCommentary(selectedGame);
+      setRadioText(text);
+      
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.1; // highly energetic pace
+        utterance.pitch = 1.05; // bright sportscaster tone
+        
+        // Pick an English voice
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Male')));
+        if (englishVoice) utterance.voice = englishVoice;
+
+        utterance.onend = () => {
+          setIsRadioOn(false);
+        };
+        utterance.onerror = () => {
+          setIsRadioOn(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } else {
+        onShowToast("Speech synthesis is not supported in your browser.");
+        setIsRadioOn(false);
+      }
+    }
+  };
+
+  // Sync commentating voice to active game change
+  useEffect(() => {
+    if (isRadioOn) {
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+      }
+      const text = generateCommentary(selectedGame);
+      setRadioText(text);
+      
+      if ('speechSynthesis' in window) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.rate = 1.1;
+        utterance.pitch = 1.05;
+        const voices = window.speechSynthesis.getVoices();
+        const englishVoice = voices.find(v => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Male')));
+        if (englishVoice) utterance.voice = englishVoice;
+        utterance.onend = () => setIsRadioOn(false);
+        utterance.onerror = () => setIsRadioOn(false);
+        window.speechSynthesis.speak(utterance);
+      }
+    }
+  }, [selectedGame]);
+
   const predictedTeam = predictions[selectedGame.id] || null;
   const hasPredicted = !!predictions[selectedGame.id];
 
@@ -785,6 +881,101 @@ export function FanStand({ onShowToast, onOpenChat, onScrollToCatalog, onAboutOp
                   </div>
                 </>
               )}
+            </div>
+          </div>
+
+          {/* COACH COR SPORTS RADIO / COMMENTARY PLAYER */}
+          <div className="bg-[#0f0f11] border border-zinc-900 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl relative overflow-hidden">
+            {/* Ambient glows inside radio player */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#03a9f4]/10 rounded-full blur-3xl pointer-events-none" />
+
+            <div className="flex flex-wrap items-center justify-between gap-4 border-b border-zinc-900 pb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-[#03a9f4]/10 text-[#03a9f4] border border-[#03a9f4]/20 rounded-xl flex items-center justify-center">
+                  <Volume2 className={`w-5 h-5 ${isRadioOn ? "animate-bounce" : ""}`} />
+                </div>
+                <div>
+                  <h3 className="font-anton text-lg uppercase tracking-wider text-zinc-100">
+                    COACH COR SPORTS RADIO
+                  </h3>
+                  <p className="text-[10px] text-zinc-500 font-mono tracking-widest uppercase mt-0.5">
+                    HEAR LIVE COMMENTARY & CURRENT EVENTS
+                  </p>
+                </div>
+              </div>
+
+              {/* Status pill */}
+              <div className="flex items-center gap-1.5 bg-[#03a9f4]/10 border border-[#03a9f4]/20 px-3 py-1 rounded-full">
+                <span className={`w-2 h-2 rounded-full ${isRadioOn ? "bg-emerald-500 animate-ping" : "bg-zinc-600"}`} />
+                <span className="text-[9px] font-mono tracking-widest text-zinc-400 uppercase font-black">
+                  {isRadioOn ? "RECEIVING SIGNAL" : "OFFLINE"}
+                </span>
+              </div>
+            </div>
+
+            {/* Simulated radio display */}
+            <div className="bg-black/40 border border-zinc-900 rounded-2xl p-5 space-y-4">
+              <div className="flex items-start justify-between">
+                <div>
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">CURRENT MATCHUP TUNED</p>
+                  <h4 className="font-anton text-lg text-white uppercase tracking-wide mt-1">
+                    {selectedGame.teamAway} vs {selectedGame.teamHome}
+                  </h4>
+                </div>
+                <div className="text-right">
+                  <p className="text-[9px] font-mono text-zinc-500 uppercase tracking-widest">LEAGUE BAND</p>
+                  <span className="inline-block bg-[#03a9f4]/25 border border-[#03a9f4]/40 text-[#00D2FF] text-[9.5px] font-mono font-black px-2.5 py-0.5 rounded uppercase tracking-wider mt-1">
+                    {selectedGame.league} STATION
+                  </span>
+                </div>
+              </div>
+
+              {/* Visual spectrum bars representing radio reception */}
+              {isRadioOn ? (
+                <div className="flex items-end gap-1 h-8 justify-center py-1">
+                  {[...Array(24)].map((_, i) => {
+                    const duration = 0.4 + (i % 5) * 0.1;
+                    return (
+                      <motion.div
+                        key={i}
+                        animate={{ height: ["20%", `${Math.floor(Math.random() * 80) + 20}%`, "20%"] }}
+                        transition={{ duration, repeat: Infinity, ease: "easeInOut" }}
+                        className="w-1.5 bg-gradient-to-t from-blue-600 to-[#03a9f4] rounded-full"
+                      />
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="h-8 border-y border-zinc-900/60 flex items-center justify-center">
+                  <span className="text-[10px] font-mono text-zinc-600 tracking-[0.2em] uppercase font-bold">--- TUNING CLOSED ---</span>
+                </div>
+              )}
+
+              {/* Narrated Text Display */}
+              <div className="bg-zinc-950/80 border border-zinc-900/60 rounded-xl p-4">
+                <p className={`text-xs font-semibold leading-relaxed ${isRadioOn ? "text-[#00D2FF]" : "text-zinc-500"}`}>
+                  {radioText}
+                </p>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-2">
+              <p className="text-[10px] text-zinc-500 font-mono tracking-wider max-w-sm">
+                Hear Coach Cor deliver a fully synthesized play-by-play recap of the latest scoreboard activity, team events, and limited-edition apparel opportunities!
+              </p>
+              
+              <button
+                onClick={handleToggleRadio}
+                className={`w-full sm:w-auto px-6 py-3 rounded-full text-xs font-black tracking-widest uppercase transition-all duration-300 active:scale-95 cursor-pointer shadow-lg flex items-center justify-center gap-2 ${
+                  isRadioOn
+                    ? "bg-red-600 text-white hover:bg-red-500 shadow-red-600/20"
+                    : "bg-gradient-to-r from-blue-600 to-cyan-500 hover:from-blue-500 hover:to-cyan-400 text-white shadow-blue-600/20"
+                }`}
+              >
+                <Volume2 className="w-4 h-4 text-current animate-pulse" />
+                {isRadioOn ? "TUNE OFF COMMENTARY" : "LISTEN LIVE RADIO 🎙️"}
+              </button>
             </div>
           </div>
 

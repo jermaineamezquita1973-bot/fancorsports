@@ -36,6 +36,7 @@ import { DiscountPopup } from "./components/DiscountPopup";
 import { DiscountCard } from "./components/DiscountCard";
 import { SportsCinematicSlide } from "./components/SportsCinematicSlide";
 import { HeroImageSlider } from "./components/HeroImageSlider";
+import { LiveVoiceArena } from "./components/LiveVoiceArena";
 import { Footer } from "./components/Footer";
 import { CollectionReviews } from "./components/CollectionReviews";
 import { auth, isFirebaseConfigured } from "./lib/firebase";
@@ -69,6 +70,9 @@ export default function App() {
 
   // Fan Stand Modal state
   const [isFanStandOpen, setIsFanStandOpen] = useState(false);
+
+  // Live Voice Arena state
+  const [isVoiceOpen, setIsVoiceOpen] = useState(false);
 
   // Discount Modal state (Controlled from App)
   const [isDiscountOpen, setIsDiscountOpen] = useState(false);
@@ -347,6 +351,7 @@ export default function App() {
               }}
               onShopAll={() => handleSelectLeague("ALL")}
               onOpenDiscount={() => setIsDiscountOpen(true)}
+              onOpenVoiceArena={() => setIsVoiceOpen(true)}
               currentIndex={syncSlideIndex}
               onIndexChange={setSyncSlideIndex}
             />
@@ -577,6 +582,13 @@ export default function App() {
           </div>
         )}
       </AnimatePresence>
+
+      {/* 15. HIGH-FIDELITY GEMINI LIVE VOICE ARENA */}
+      <LiveVoiceArena 
+        isOpen={isVoiceOpen} 
+        onClose={() => setIsVoiceOpen(false)} 
+        onShowToast={showToast} 
+      />
 
     </main>
   );
