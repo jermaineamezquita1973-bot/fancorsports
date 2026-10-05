@@ -1,0 +1,193 @@
+{
+  "entities": {
+    "subscriber": {
+      "title": "Subscriber",
+      "description": "Newsletter subscriber",
+      "type": "object",
+      "properties": {
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The subscriber's email address"
+        },
+        "source": {
+          "type": "string",
+          "description": "Where the user subscribed from (e.g., homepage_cta, footer_newsletter, discount_popup)"
+        },
+        "subscribedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the subscriber joined"
+        }
+      },
+      "required": ["email", "source"]
+    },
+    "product": {
+      "title": "Product",
+      "description": "Custom fan or team apparel product created or synchronized by admin",
+      "type": "object",
+      "properties": {
+        "printifyId": {
+          "type": "string",
+          "description": "Optional original Printify product ID"
+        },
+        "name": {
+          "type": "string",
+          "description": "The product's name"
+        },
+        "title": {
+          "type": "string",
+          "description": "The product's display title"
+        },
+        "collection": {
+          "type": "string",
+          "description": "The sub-collection name (e.g. Retro Classics, Stadium Series)"
+        },
+        "team": {
+          "type": "string",
+          "description": "Associated sports team name"
+        },
+        "category": {
+          "type": "string",
+          "description": "Apparel category name"
+        },
+        "cost": {
+          "type": "number",
+          "description": "Cost price of product"
+        },
+        "price": {
+          "type": "number",
+          "description": "Selling price of product"
+        },
+        "comparePrice": {
+          "type": "number",
+          "description": "Compare-at price of product"
+        },
+        "profit": {
+          "type": "number",
+          "description": "Calculated profit (selling price minus cost)"
+        },
+        "active": {
+          "type": "boolean",
+          "description": "Whether the product is currently active"
+        },
+        "image": {
+          "type": "string",
+          "description": "URL of the product image"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["jersey", "hoodie", "accessory", "tee"],
+          "description": "Normalized category type"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when the product was created"
+        }
+      },
+      "required": ["name", "title", "price", "image", "type"]
+    },
+    "hidden_printify_product": {
+      "title": "Hidden Printify Product",
+      "description": "A Printify product ID that is hidden from public view",
+      "type": "object",
+      "properties": {
+        "productId": {
+          "type": "string",
+          "description": "The printify product ID"
+        },
+        "hiddenAt": {
+          "type": "string",
+          "description": "ISO string timestamp when the product was hidden"
+        }
+      },
+      "required": ["productId"]
+    },
+    "fanstand_game": {
+      "title": "FanStand Game",
+      "description": "Sports game shown in the scoreboard",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "league": { "type": "string" },
+        "time": { "type": "string" },
+        "teamHome": { "type": "string" },
+        "teamAway": { "type": "string" },
+        "scoreHome": { "type": "number" },
+        "scoreAway": { "type": "number" },
+        "status": { "type": "string", "enum": ["SCHEDULED", "LIVE", "FINISHED"] },
+        "featured": { "type": "boolean" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "league", "teamHome", "teamAway", "scoreHome", "scoreAway", "status"]
+    },
+    "fan_post": {
+      "title": "Fan Post",
+      "description": "Fan Showcase posts with official gear",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "username": { "type": "string" },
+        "likes": { "type": "number" },
+        "image": { "type": "string" },
+        "caption": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["id", "username", "likes", "image", "caption"]
+    },
+    "fan_rating": {
+      "title": "Fan Rating",
+      "description": "Accumulated team power ratings",
+      "type": "object",
+      "properties": {
+        "teamName": { "type": "string" },
+        "starsSum": { "type": "number" },
+        "ratingsCount": { "type": "number" }
+      },
+      "required": ["teamName", "starsSum", "ratingsCount"]
+    },
+    "fan_leaderboard_entry": {
+      "title": "Fan Leaderboard Entry",
+      "description": "High score leaderboard entry for active fans",
+      "type": "object",
+      "properties": {
+        "fanId": { "type": "string" },
+        "username": { "type": "string" },
+        "points": { "type": "number" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fanId", "username", "points"]
+    }
+  },
+  "firestore": {
+    "subscribers/{subscriberId}": {
+      "schema": "subscriber",
+      "description": "Newsletter subscribers"
+    },
+    "products/{productId}": {
+      "schema": "product",
+      "description": "Custom products in store"
+    },
+    "hidden_printify_products/{hiddenProductId}": {
+      "schema": "hidden_printify_product",
+      "description": "Printify products hidden from view"
+    },
+    "fanstand_games/{gameId}": {
+      "schema": "fanstand_game",
+      "description": "Scoreboard games synced in real-time"
+    },
+    "fan_posts/{postId}": {
+      "schema": "fan_post",
+      "description": "Showcase posts uploaded by fans"
+    },
+    "fan_ratings/{teamId}": {
+      "schema": "fan_rating",
+      "description": "Crowdsourced ratings for each sports team"
+    },
+    "fan_leaderboard/{fanId}": {
+      "schema": "fan_leaderboard_entry",
+      "description": "Point leaderboard entries"
+    }
+  }
+}

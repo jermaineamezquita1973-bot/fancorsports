@@ -1,0 +1,147 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // 1. Global Default Deny Rule
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Global Helper Functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isSignedIn() && 
+             request.auth.token.email == "jermaineamezquita1973@gmail.com" && 
+             request.auth.token.email_verified == true;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // 3. Collection-Specific Validation Helpers
+
+    // Subscriber validation: email is required and bounded, source is required and bounded
+    function isValidSubscriber(data) {
+      return data.keys().hasAll(['email', 'source']) &&
+             data.email is string && data.email.size() > 0 && data.email.size() <= 254 &&
+             data.source is string && data.source.size() > 0 && data.source.size() <= 100;
+    }
+
+    // Product validation: name, title, price, image, type are required and bounded
+    function isValidProduct(data) {
+      return data.keys().hasAll(['name', 'title', 'price', 'image', 'type']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 200 &&
+             data.title is string && data.title.size() > 0 && data.title.size() <= 200 &&
+             data.price is number && data.price >= 0 &&
+             data.image is string && data.image.size() > 0 && data.image.size() <= 2000 &&
+             data.type is string && (data.type == 'jersey' || data.type == 'hoodie' || data.type == 'accessory' || data.type == 'tee');
+    }
+
+    // Hidden Product validation: productId is required and bounded
+    function isValidHiddenProduct(data) {
+      return data.keys().hasAll(['productId']) &&
+             data.productId is string && data.productId.size() > 0 && data.productId.size() <= 128;
+    }
+
+    // FanStand Game validation
+    function isValidFanstandGame(data) {
+      return data.keys().hasAll(['id', 'league', 'teamHome', 'teamAway', 'scoreHome', 'scoreAway', 'status']) &&
+             data.id is string && data.id.size() > 0 && data.id.size() <= 128 &&
+             data.league is string && data.league.size() > 0 && data.league.size() <= 50 &&
+             data.teamHome is string && data.teamHome.size() > 0 && data.teamHome.size() <= 100 &&
+             data.teamAway is string && data.teamAway.size() > 0 && data.teamAway.size() <= 100 &&
+             data.scoreHome is number && data.scoreHome >= 0 &&
+             data.scoreAway is number && data.scoreAway >= 0 &&
+             data.status is string && (data.status == 'SCHEDULED' || data.status == 'LIVE' || data.status == 'FINISHED');
+    }
+
+    // Fan Showcase Post validation
+    function isValidFanPost(data) {
+      return data.keys().hasAll(['id', 'username', 'likes', 'image', 'caption']) &&
+             data.id is string && data.id.size() > 0 &&
+             data.username is string && data.username.size() > 0 && data.username.size() <= 100 &&
+             data.likes is number && data.likes >= 0 &&
+             data.image is string && data.image.size() > 0 && data.image.size() <= 2000 &&
+             data.caption is string && data.caption.size() > 0 && data.caption.size() <= 500;
+    }
+
+    // Fan Rating validation
+    function isValidFanRating(data) {
+      return data.keys().hasAll(['teamName', 'starsSum', 'ratingsCount']) &&
+             data.teamName is string && data.teamName.size() > 0 && data.teamName.size() <= 100 &&
+             data.starsSum is number && data.starsSum >= 0 &&
+             data.ratingsCount is number && data.ratingsCount >= 0;
+    }
+
+    // Fan Leaderboard Entry validation
+    function isValidLeaderboardEntry(data) {
+      return data.keys().hasAll(['fanId', 'username', 'points']) &&
+             data.fanId is string && data.fanId.size() > 0 &&
+             data.username is string && data.username.size() > 0 && data.username.size() <= 100 &&
+             data.points is number && data.points >= 0;
+    }
+
+    // 4. Match Blocks for Collections
+
+    // Subscribers Collection
+    match /subscribers/{subscriberId} {
+      allow create: if isValidId(subscriberId) && isValidSubscriber(incoming());
+      allow read: if isAdmin();
+      allow update, delete: if false;
+    }
+
+    // Products Collection
+    match /products/{productId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(productId) && isValidProduct(incoming());
+      allow delete: if isAdmin() && isValidId(productId);
+    }
+
+    // Hidden Printify Products Collection
+    match /hidden_printify_products/{hiddenProductId} {
+      allow read: if true;
+      allow create, update: if isAdmin() && isValidId(hiddenProductId) && isValidHiddenProduct(incoming());
+      allow delete: if isAdmin() && isValidId(hiddenProductId);
+    }
+
+    // FanStand Games Collection
+    match /fanstand_games/{gameId} {
+      allow read: if true;
+      allow create, update: if isValidId(gameId) && isValidFanstandGame(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Fan Showcase Posts Collection
+    match /fan_posts/{postId} {
+      allow read: if true;
+      allow create, update: if isValidId(postId) && isValidFanPost(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Fan Ratings Collection
+    match /fan_ratings/{teamId} {
+      allow read: if true;
+      allow create, update: if isValidId(teamId) && isValidFanRating(incoming());
+      allow delete: if isAdmin();
+    }
+
+    // Fan Leaderboard Collection
+    match /fan_leaderboard/{fanId} {
+      allow read: if true;
+      allow create, update: if isValidId(fanId) && isValidLeaderboardEntry(incoming());
+      allow delete: if isAdmin();
+    }
+  }
+}
